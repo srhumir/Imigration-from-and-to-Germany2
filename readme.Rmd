@@ -1,0 +1,220 @@
+---
+title: "Analysing migration between Germany and other EU countries"
+author: "Reza Hosseini"
+date: "18 Juli 2016"
+output: html_document
+---
+## Synopsis
+The aim of this study is to analyse the data of migration between Germany and other EU countries in the time frame between 1974 to 2014. We will explore the data analyse change in time, and relative to countries, use the data to forecast mogration in years 2015 and 2016.
+
+To summarize the result, we see a incresing pattern in the number of migrations both to and from Germany, specially from 90's. The highest total number of departure from Germany to another country took place in 2014 to Poland with 138 thousand migrants. And the greatest number of people came to Germnay from another cuntry were also from Poland in 2014 with around 197 thousand. Finally we concluded a meanigful difference between the number of Female and Male migrants from Germany both in the years 2013 and 2014.
+
+## Data exploration
+The dataset contains the number of people arrived to  or departed from Germany for living from 1947 to 2014. It also gives these numbers based on the gender of migrants.
+
+To have an understanding of the pattern here you can see the total number of arrivals and departures based on the gender. 
+```{r, message=FALSE, warning=FALSE, echo=F, cache=T}
+library(xlsx)
+library(reshape2)
+library(ggplot2)
+#########################loading and cleaning ##############################
+migration <- read.xlsx("./data/12711-0002.xls", 1, startRow = 4, endRow = 166
+                        )
+```
+
+```{r, fig.width= 15, fig.height=6, message=FALSE, echo=F, cache=F, warning=FALSE}
+library(reshape2)
+library(ggplot2)
+names(migration)[1] <- "State"
+names(migration)[2] <- "Sex"
+names(migration)[3] <- "Arrival/Departure"
+migration <- migration[-4]
+# remove extra X at the beggining of years
+names(migration)[-c(1:3)] <- sub("X","", names(migration)[-c(1:3)])
+# Fill names of state in the whole column
+b <- ((1:length(migration$State)-1) %/% 6)*6 +1 
+migration$State <- migration$State[b]
+# fill sex in the whole column
+c <- ((1:length(migration$Sex)-1) %/% 2)*2 +1 
+migration$Sex <- migration$Sex[c]
+# convert to numeric format
+for (i in 4:ncol(migration)){
+        migration[,i] <- as.numeric(as.character(migration[,i]))
+}
+#compute totals
+
+totalFemaleArrival <- sapply(migration[migration$Sex == "Female" &
+                                               migration$`Arrival/Departure` == "Arrivals from foreign countries",
+                                       4:ncol(migration)], sum, na.rm=T)
+
+totalMaleArrival <- sapply(migration[migration$Sex == "Male" &
+                                             migration$`Arrival/Departure` == "Arrivals from foreign countries",
+                                     4:ncol(migration)], sum, na.rm=T)
+totalFemaleDeparture <- sapply(migration[migration$Sex == "Female" &
+                                                 migration$`Arrival/Departure` == "Departures to foreign countries",
+                                         4:ncol(migration)], sum, na.rm=T)
+totalMaleDeparture <- sapply(migration[migration$Sex == "Male" &
+                                               migration$`Arrival/Departure` == "Departures to foreign countries",
+                                       4:ncol(migration)], sum, na.rm=T)
+TotalArrival <- sapply(migration[migration$Sex == "Total" &
+                                         migration$`Arrival/Departure` == "Arrivals from foreign countries",
+                                 4:ncol(migration)], sum, na.rm=T)                                       
+TotalDeparture <- sapply(migration[migration$Sex == "Total" &
+                                           migration$`Arrival/Departure` == "Departures to foreign countries",
+                                   4:ncol(migration)], sum, na.rm=T)
+years <- names(migration[4:ncol(migration)])
+
+arrivals <- data.frame(Year = years,"D/A" = rep("Arrival", length(TotalArrival)), 
+                       Female = totalFemaleArrival, Male = totalMaleArrival, Total = TotalArrival)
+departures <- data.frame(Year = years,"D/A" = rep("Departures", length(TotalDeparture)), 
+                         Female = totalFemaleDeparture, Male = totalMaleDeparture, Total = TotalDeparture)
+
+totalmig <- rbind(arrivals, departures)
+totalmig <- melt(totalmig, c(1,2), variable.name = "Sex", value.name = "Total.Number")
+totalmig$Year <- as.integer(as.character(totalmig$Year))
+qplot(Year, Total.Number, data=totalmig, color=Sex, facets = .~D.A) + 
+        geom_line(size=1) + ylab("Totla Number")
+```
+
+It can be seen that the trend in both arrivals and departures is roughly increasing specially from mid 2000's. Also
+till mid 2000's the number of departures in roughly equal and sometimes more that the number of arrivals but from then the number of arrivals started increasing faster and gets higher than departures.
+
+## The maximum number of departures/Arrivals
+We want to explore how many people come and go when and where the most. These can be seen the best in the plots below
+
+```{r, fig.width= 15, fig.height=6, message=F, warning=F, echo=F}
+# In which year and country was the highest number of departures?
+totaldep <- migration[migration$Sex == "Total" & 
+                              migration$`Arrival/Departure` == "Departures to foreign countries",
+                              ]
+totaldep <- totaldep[,-c(2,3)]
+totaldep <- melt(totaldep, 1, variable.name = "Year", value.name = "Departures",
+                 na.rm = T)
+ord  <- order(totaldep$Departures)
+par(mfrow=c(1,2))
+mp <- barplot(tail(totaldep$Departures[ord])/1000, 
+        names.arg = paste(droplevels(tail(totaldep$State[ord])), tail(totaldep$Year[ord]), sep = "\n")
+        , col = "lightblue",
+        xlab = "Country, Year", ylab = "Number of departures to (thousand)", 
+        main = "Year, countries with the most number of departures to")
+text(mp, tail(totaldep$Departures[ord])/1000, tail(totaldep$Departures[ord])%/%1000, pos=1, col="red")
+
+
+# Which country shows the most arrivals and in which year?
+totalarr <- migration[migration$Sex == "Total" & 
+                              migration$`Arrival/Departure` == "Arrivals from foreign countries",
+                      ]
+totalarr <- totalarr[,-c(2,3)]
+totalarr <- melt(totalarr, 1, variable.name = "Year", value.name = "Arrivals",
+                 na.rm = T)
+ord2  <- order(totalarr$Arrivals)
+mp <- barplot(tail(totalarr$Arrivals[ord2])/1000, 
+              names.arg = paste(droplevels(tail(totalarr$State[ord2])), tail(totalarr$Year[ord2]), sep = "\n")
+              , col = "lightblue",
+              xlab = "Country, Year", ylab = "Number of arrivals from (thousand)", 
+              main = "Year, countries with the most number of arrivals")
+text(mp, tail(totalarr$Arrivals[ord2])/1000, tail(totalarr$Arrivals[ord2])%/%1000, 
+     pos=1, col="red")
+```
+
+Based on the plots, in the yeras 2008 and 2014 respectively 132 and 138 thousand people went from  Germany to Poland which are the most number of departures to a single country.
+Also in each of years 2013 and 2014 197 thousand people came to Germany from again Poland.
+
+##Forecasting
+
+```{r, fig.width= 15, fig.height=6, message=F, warning=F, echo=F}
+library(forecast)
+totals <- migration[migration$Sex == "Total",]
+tss <- lapply(1:nrow(totals), function(i) ts(as.numeric(totals[i,4:ncol(totals)]),
+                                             start = 1974))
+names(tss) <- totals$State
+etss <- lapply(1:length(tss), function(i){
+        if (sum(is.na(tss[[i]])) < 35){
+                holt(tss[[i]])
+        }else{
+                tss[[i]][41]
+        }
+}) 
+fcasts <- lapply(1:length(etss), function(i) forecast(etss[[i]]) )
+
+forecasts <- data.frame(State = totals$State,  
+                        Arrival.Departure = sub("from foreign countries|to foreign countries", "", totals$`Arrival/Departure`),
+                        Year2015 = sapply(fcasts, function(x) floor(x$mean[1])),
+                        confint2015 = paste("(", sapply(fcasts, function(x) floor(x$lower[1,1])),",",sapply(fcasts, function(x) floor(x$upper[1,1])), ")", sep=""),
+                        Year2016 = sapply(fcasts, function(x) floor(x$mean[2])),
+                        Lower95percent = paste("(", sapply(fcasts, function(x) floor(x$lower[1,1])),",",sapply(fcasts, function(x) floor(x$upper[1,1])), ")", sep=""))
+
+names(forecasts) <- c("State", "Arrival/Departure", "2015", "Conf. Interval", "2016", "Conf. Interval")
+```
+
+As no seasonal pattern could be seen in the data but there are local trends in them, I decided to use the linear exponetial smoothing method for forecasting. The results of forecasting including 95 percent confidence intervals are shown in the table below
+
+```{r , echo=F}
+
+autoplot(fcasts[[i]])
+```
+
+```{r, echo=F, message=F}
+library(knitr)
+kable(forecasts, format.args = list(decimal.mark = ".", big.mark = ","), align = "l",caption = "Forecast of the number of arrivals and departures to and from Germany")
+```
+
+To see a pivot cahrt if the forecast please go to 
+
+
+##Difference between the number of male and female travelers
+
+To test the significance of difference I tested the null hypothesis that the number of male and female travelers are equal against the alternative hyphothesis that they are different. 
+As we are dealing with a contingency table of count data, I decided to use the $\Chi$ square test. 
+
+
+```{r, message=F, echo=F}
+femaledep2013 <- migration[migration$Sex == "Female" & migration$`Arrival/Departure` == "Departures to foreign countries",
+                 c("State","2013")]
+maledep2013 <- migration[migration$Sex == "Male" & migration$`Arrival/Departure` == "Departures to foreign countries",
+                     c("State","2013")]
+dep2013 <- data.frame(State = femaledep2013[,1], Female = femaledep2013[,2], Male = maledep2013[,2])
+
+chi2013 <- chisq.test(dep2013[,names(dep2013)[2:3]], p = c(.5,.5))
+
+
+
+femaledep2014 <- migration[migration$Sex == "Female" & migration$`Arrival/Departure` == "Departures to foreign countries",
+                           c("State","2014")]
+maledep2014 <- migration[migration$Sex == "Male" & migration$`Arrival/Departure` == "Departures to foreign countries",
+                         c("State","2014")]
+dep2014 <- data.frame(State = femaledep2014[,1], Female = femaledep2014[,2], Male = maledep2014[,2])
+
+chi2014 <- chisq.test(dep2014[,names(dep2014)[2:3]], p = c(.5,.5))
+```
+
+I developed contingency tables of states vs sex for both years. Below is an interactive chart of the table for 2013.
+
+```{r, message=F, warning=F, echo=F}
+library(rCharts)
+library(rjson)
+dep2013melt <- melt(dep2013, 1, variable.name = "Sex")
+d <- dPlot(value ~ State, groups = 'Sex', data=dep2013melt, type='line')
+d$legend( x = 60, y = 10, width = 620, height = 20, horizontalAlign = "right")
+```
+
+```{r ,echo=F, results = "asis", comment = NA}
+d$show('iframe', cdn = TRUE)
+```
+
+
+
+And for 2014
+
+```{r message=F, warning=F, echo=F}
+dep2014melt <- melt(dep2014, 1, variable.name = "Sex")
+d2014 <- dPlot(value ~ State, groups = 'Sex', data=dep2014melt, type='line')
+d2014$legend( x = 60, y = 10, width = 620, height = 20, horizontalAlign = "right")
+```
+
+```{r results = "asis", comment = NA, echo=F}
+d2014$show('iframe', cdn = TRUE)
+```
+
+
+Then ran a $\Chi$ squred test on the contingency tables assuming 50% probability for each sex. The P-value for both years are almost zero so the null hyphothesis is rejected and the number of male and female migrants are significantly different.
