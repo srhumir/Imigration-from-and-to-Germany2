@@ -132,6 +132,10 @@ etss <- lapply(1:length(tss), function(i){
 }) 
 fcasts <- lapply(1:length(etss), function(i) forecast(etss[[i]]) )
 
+country <- "Belgium"
+da <- "Departures to foreign countries"
+i <- grep(country, totals$State)[grep(da,totals$`Arrival/Departure`)[1]]
+autoplot(fcasts[[i]])
 forecasts <- data.frame(State = totals$State,  
                         Arrival.Departure = sub("from foreign countries|to foreign countries", "", totals$`Arrival/Departure`),
                         Year2015 = sapply(fcasts, function(x) floor(x$mean[1])),
