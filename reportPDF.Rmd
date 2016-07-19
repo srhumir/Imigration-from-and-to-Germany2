@@ -2,8 +2,7 @@
 title: "Analysing migration between Germany and other EU countries"
 author: "Reza Hosseini"
 date: "18 Juli 2016"
-runtime: shiny
-output: html_document
+output: pdf_document
 ---
 ## Synopsis
 The aim of this study is to analyse the data of migration between Germany and other EU countries in the time frame between 1974 to 2014. We will explore the data analyse change in time, and relative to countries, use the data to forecast mogration in years 2015 and 2016.
@@ -14,12 +13,13 @@ To summarize the result, we see a incresing pattern in the number of migrations 
 The dataset contains the number of people arrived to  or departed from Germany for living from 1947 to 2014. It also gives these data based on the gender of migrants.
 
 To have an understanding of the pattern here you can see the total number of arrivals and departures based on gender. 
-```{r, message=FALSE, warning=FALSE, echo=F}
+```{r, message=FALSE, warning=FALSE, echo=F, cache=T}
+library(xlsx)
 library(reshape2)
 library(ggplot2)
-library(codetools)
 #########################loading and cleaning ##############################
-migration <- read.csv2("./data/12711-0002.csv", skip = 3)
+migration <- read.xlsx("./data/12711-0002.xls", 1, startRow = 4, endRow = 166
+                        )
 ```
 
 ```{r, fig.width= 15, fig.height=6, message=FALSE, echo=F, cache=F, warning=FALSE}
@@ -147,9 +147,9 @@ forecasts <- data.frame(State = totals$State,
 names(forecasts) <- c("State", "Arrival/Departure", "2015", "Conf. Interval", "2016", "Conf. Interval")
 ```
 
-As no seasonal pattern could be seen in the data but there are local trends in them, I decided to use the linear exponetial smoothing method for forecasting. The results of forecasting including 95 percent confidence intervals can be seen in the following charts and table.
+ As no seasonal pattern could be seen in the data but there are local trends in them, I decided to use the linear exponetial smoothing method for forecasting. The results of forecasting including 95 percent confidence intervals can be seen in the following charts and table. 
 
-```{r , echo=F}
+<!--```{r , echo=F}
 inputPanel(
         selectInput("country", label = "Country",
                     choices = as.character(unique(totals$State))),
@@ -163,7 +163,7 @@ renderPlot({
         totals$State)[grep(input$da,totals$`Arrival/Departure`)[1]]]]$mean[1]), "and for", "2016:", floor(fcasts[[grep(input$country,
         totals$State)[grep(input$da,totals$`Arrival/Departure`)[1]]]]$mean[2]) ))
 })
-```
+```-->
 
 ```{r, echo=F, message=F}
 library(knitr)
@@ -174,7 +174,7 @@ kable(forecasts, format.args = list(decimal.mark = ".", big.mark = ","), align =
 ##Difference between the number of male and female travelers
 
 To test the significance of difference I tested the null hypothesis that the number of male and female travelers are equal against the alternative hyphothesis that they are different. 
-As we are dealing with a contingency table of count data, I decided to use the chi squared test. 
+As we are dealing with a contingency table of count data, I decided to use the $\chi^2$ test. 
 
 
 ```{r, message=F, echo=F}
@@ -197,7 +197,7 @@ dep2014 <- data.frame(State = femaledep2014[,1], Female = femaledep2014[,2], Mal
 chi2014 <- chisq.test(dep2014[,names(dep2014)[2:3]], p = c(.5,.5))
 ```
 
-I developed contingency tables of states vs sex for both years. Below is a chart of the table for 2013.
+I developed contingency tables of states vs sex for both years. Below is an interactive chart of the table for 2013.
 
 ```{r, message=F, warning=F, echo=F}
 dep2013melt <- melt(dep2013, 1, variable.name = "Sex")
@@ -213,7 +213,7 @@ d <- qplot(x=State,y=value/1000, fill = Sex, data=dep2014melt) + geom_bar(stat="
 d
 ```
 
-Then I ran a chi squared test on the contingency tables assuming 50% probability for each sex. The P-value of the twat for both years are almost zero. So the null hypothesis is rejected and the number of male and female migrants are significantly different.
+Then I ran a $\chi^2$ test on the contingency tables assuming 50% probability for each sex. The P-value of the twat for both years are almost zero. So the null hypothesis is rejected and the number of male and female migrants are significantly different.
 
 ## Reference
 Statistisches Bundesamt, Wiesbaden 2016

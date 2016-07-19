@@ -175,13 +175,27 @@ femaledep2013 <- migration[migration$Sex == "Female" & migration$`Arrival/Depart
 maledep2013 <- migration[migration$Sex == "Male" & migration$`Arrival/Departure` == "Departures to foreign countries",
                      c("State","2013")]
 dep2013 <- data.frame(State = femaledep2013[,1], Female = femaledep2013[,2], Male = maledep2013[,2])
+dep2013melted <- melt(dep2013, 1, variable.name = "Sex", value.name = "Count")
+fit1 <- glm(Count~State, data=dep2013melted, family = poisson())
+fit2 <- glm(Count~State+Sex, data = dep2013melted, family = poisson())
+fit1 <- lm(Count~State, data=dep2013melted)
+fit2 <- lm(Count~State+Sex, data = dep2013melted)
+anova(fit1, fit2, test = "Chi")
+summary(an)
+a <- aov(fit2)
+summary(a)
 
-dep2013$Female.Ratio <- dep2013$Female/(dep2013$Female+dep2013$Male)
-dep2013$Male.Ratio <- dep2013$Male/(dep2013$Female+dep2013$Male)
+
+# dep2013$Female.Ratio <- dep2013$Female/(dep2013$Female+dep2013$Male)
+# dep2013$Male.Ratio <- dep2013$Male/(dep2013$Female+dep2013$Male)
 hist(dep2013$Male.Ratio)
 abline(v=mean(dep2013$Male.Ratio))
 chi2013 <- chisq.test(dep2013[,names(dep2013)[2:3]], p = c(.5,.5))
-chi2013
+t2013 <- t.test(dep2013[,2], dep2013[,3], paired = T)
+wil2013 <- wilcox.test(dep2013[,2], dep2013[,3], paired = T, alternative = "two.sided")
+fish2013 <- fisher.test(as.matrix(dep2013[,names(dep2013)[2:3]]), workspace = 20000000,
+                        alternative = "two.sided", hybrid = TRUE)
+
 
 
 femaledep2014 <- migration[migration$Sex == "Female" & migration$`Arrival/Departure` == "Departures to foreign countries",

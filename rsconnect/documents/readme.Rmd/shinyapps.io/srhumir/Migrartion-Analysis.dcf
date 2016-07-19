@@ -2,8 +2,8 @@ name: Migrartion-Analysis
 account: srhumir
 server: shinyapps.io
 appId: 115281
-bundleId: 508343
+bundleId: 508391
 url: https://srhumir.shinyapps.io/Migrartion-Analysis/
-when: 1468863915.27947
+when: 1468866265.5689
 asMultiple: FALSE
 asStatic: FALSE
