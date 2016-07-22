@@ -137,7 +137,7 @@ da <- "Departures to foreign countries"
 i <- grep(country, totals$State)[grep(da,totals$`Arrival/Departure`)[1]]
 autoplot(fcasts[[i]])
 forecasts <- data.frame(State = totals$State,  
-                        Arrival.Departure = sub("from foreign countries|to foreign countries", "", totals$`Arrival/Departure`),
+                        Arrival.Departure = sub(" from foreign countries| to foreign countries", "", totals$`Arrival/Departure`),
                         Year2015 = sapply(fcasts, function(x) floor(x$mean[1])),
                         Lower95percent = sapply(fcasts, function(x) floor(x$lower[1,1])),
                         Upper95percent = sapply(fcasts, function(x) floor(x$upper[1,1])),
@@ -145,6 +145,12 @@ forecasts <- data.frame(State = totals$State,
                         Lower95percent = sapply(fcasts, function(x) floor(x$lower[2,1])),
                         Upper95percent = sapply(fcasts, function(x) floor(x$upper[2,1]))
 )
+#forest plot
+RelConf <- forecasts$Upper95percent - forecasts$Lower95percent
+p <- ggplot(forecasts, aes(x=State,  y=Year2015, ymin=Lower95percent, ymax=Upper95percent), 
+             )
+p <-  p + geom_pointrange() + coord_flip() + xlab('Country') + facet_grid(Arrival.Departure~. )
+p 
 # 
 # a <- holt(tss[[1]])
 # fcast <- forecast(a)

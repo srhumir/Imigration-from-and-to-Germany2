@@ -199,18 +199,47 @@ chi2014 <- chisq.test(dep2014[,names(dep2014)[2:3]], p = c(.5,.5))
 
 I developed contingency tables of states vs sex for both years. Below is a chart of the table for 2013.
 
+<!-- ```{r, message=F, warning=F, echo=F} -->
+<!-- dep2013melt <- melt(dep2013, 1, variable.name = "Sex") -->
+<!-- d <- qplot(x=State,y=value/1000, fill = Sex, data=dep2013melt) + geom_bar(stat="identity") + coord_flip() + ylab("Number (thousand)") + ggtitle("Female and Male immigrant from Germany in 2013") -->
+<!-- d -->
+<!-- ``` -->
+
+<!-- And for 2014 -->
+
+<!-- ```{r, message=F, warning=F, echo=F} -->
+<!-- dep2014melt <- melt(dep2014, 1, variable.name = "Sex") -->
+<!-- d <- qplot(x=State,y=value/1000, fill = Sex, data=dep2014melt) + geom_bar(stat="identity") + coord_flip() + ylab("Number (thousand)") + ggtitle("Female and Male immigrant from Germany in 2014") -->
+<!-- d -->
+<!-- ``` -->
+
+
 ```{r, message=F, warning=F, echo=F}
+library(rCharts)
+library(rjson)
 dep2013melt <- melt(dep2013, 1, variable.name = "Sex")
-d <- qplot(x=State,y=value/1000, fill = Sex, data=dep2013melt) + geom_bar(stat="identity") + coord_flip() + ylab("Number (thousand)") + ggtitle("Female and Male immigrant from Germany in 2013")
-d
+d <- dPlot(value ~ State, groups = 'Sex', data=dep2013melt, type='line')
+d$legend( x = 60, y = 10, width = 620, height = 20, horizontalAlign = "right")
 ```
+
+```{r ,echo=F, results = "asis", comment = NA}
+renderChart({
+d$show('iframe', cdn = TRUE)
+})
+```
+
+
 
 And for 2014
 
-```{r, message=F, warning=F, echo=F}
+```{r message=F, warning=F, echo=F}
 dep2014melt <- melt(dep2014, 1, variable.name = "Sex")
-d <- qplot(x=State,y=value/1000, fill = Sex, data=dep2014melt) + geom_bar(stat="identity") + coord_flip() + ylab("Number (thousand)") + ggtitle("Female and Male immigrant from Germany in 2014")
-d
+d2014 <- dPlot(value ~ State, groups = 'Sex', data=dep2014melt, type='line')
+d2014$legend( x = 60, y = 10, width = 620, height = 20, horizontalAlign = "right")
+```
+
+```{r results = "asis", comment = NA, echo=F}
+d2014$show('iframe', cdn = TRUE)
 ```
 
 Then I ran a chi squared test on the contingency tables assuming 50% probability for each sex. The P-value of the twat for both years are almost zero. So the null hypothesis is rejected and the number of male and female migrants are significantly different.
