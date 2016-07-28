@@ -2,7 +2,7 @@
 title: "Analysing migration between Germany and other EU countries"
 author: "Reza Hosseini"
 date: "18 Juli 2016"
-runtime: shiny
+# runtime: shiny
 output: html_document
 ---
 ## Synopsis
@@ -149,21 +149,6 @@ names(forecasts) <- c("State", "Arrival/Departure", "2015", "Conf. Interval", "2
 
 As no seasonal pattern could be seen in the data but there are local trends in them, I decided to use the linear exponetial smoothing method for forecasting. The results of forecasting including 95 percent confidence intervals can be seen in the following charts and table.
 
-```{r , echo=F}
-inputPanel(
-        selectInput("country", label = "Country",
-                    choices = as.character(unique(totals$State))),
-        selectInput("da", label = "Departure/Arrival", width = 800,
-                    choices = as.character(unique(totals$`Arrival/Departure`)))
-)
-renderPlot({
-        autoplot(fcasts[[grep(input$country,
-        totals$State)[grep(input$da,totals$`Arrival/Departure`)[1]]]]) + ggtitle(paste("Forecast of", input$da, "for", input$country)) +
-                xlab(paste("Forecast of departures for 2015:", floor(fcasts[[grep(input$country,
-        totals$State)[grep(input$da,totals$`Arrival/Departure`)[1]]]]$mean[1]), "and for", "2016:", floor(fcasts[[grep(input$country,
-        totals$State)[grep(input$da,totals$`Arrival/Departure`)[1]]]]$mean[2]) ))
-})
-```
 
 ```{r, echo=F, message=F}
 library(knitr)
@@ -171,10 +156,13 @@ kable(forecasts, format.args = list(decimal.mark = ".", big.mark = ","), align =
 ```
 
 
-##Difference between the number of male and female travelers
+##Difference between the number of male and female immigrants
 
-To test the significance of difference I tested the null hypothesis that the number of male and female travelers are equal against the alternative hyphothesis that they are different. 
-As we are dealing with a contingency table of count data, I decided to use the chi squared test. 
+To test the significance of difference I tested the null hypothesis that the average number of male and female immigrants are equal acroos all countries against the alternative hyphothesis that they are different. 
+As the data does not appear to show a distribution, I use the Wilcoxon Rank test. 
+
+
+<!-- are dealing with a contingency table of count data, I decided to use the chi squared test.  -->
 
 
 ```{r, message=F, echo=F}
@@ -185,7 +173,7 @@ maledep2013 <- migration[migration$Sex == "Male" & migration$`Arrival/Departure`
 dep2013 <- data.frame(State = femaledep2013[,1], Female = femaledep2013[,2], Male = maledep2013[,2])
 
 chi2013 <- chisq.test(dep2013[,names(dep2013)[2:3]], p = c(.5,.5))
-
+wil2013 <- wilcox.test(dep2013[,2], dep2013[,3], paired = T, alternative = "two.sided")
 
 
 femaledep2014 <- migration[migration$Sex == "Female" & migration$`Arrival/Departure` == "Departures to foreign countries",
@@ -195,54 +183,43 @@ maledep2014 <- migration[migration$Sex == "Male" & migration$`Arrival/Departure`
 dep2014 <- data.frame(State = femaledep2014[,1], Female = femaledep2014[,2], Male = maledep2014[,2])
 
 chi2014 <- chisq.test(dep2014[,names(dep2014)[2:3]], p = c(.5,.5))
+wil2014 <- wilcox.test(dep2014[,2], dep2014[,3], paired = T, alternative = "two.sided")
 ```
 
-I developed contingency tables of states vs sex for both years. Below is a chart of the table for 2013.
-
-<!-- ```{r, message=F, warning=F, echo=F} -->
-<!-- dep2013melt <- melt(dep2013, 1, variable.name = "Sex") -->
-<!-- d <- qplot(x=State,y=value/1000, fill = Sex, data=dep2013melt) + geom_bar(stat="identity") + coord_flip() + ylab("Number (thousand)") + ggtitle("Female and Male immigrant from Germany in 2013") -->
-<!-- d -->
-<!-- ``` -->
-
-<!-- And for 2014 -->
-
-<!-- ```{r, message=F, warning=F, echo=F} -->
-<!-- dep2014melt <- melt(dep2014, 1, variable.name = "Sex") -->
-<!-- d <- qplot(x=State,y=value/1000, fill = Sex, data=dep2014melt) + geom_bar(stat="identity") + coord_flip() + ylab("Number (thousand)") + ggtitle("Female and Male immigrant from Germany in 2014") -->
-<!-- d -->
-<!-- ``` -->
-
-
-```{r, message=F, warning=F, echo=F}
-library(rCharts)
-library(rjson)
-dep2013melt <- melt(dep2013, 1, variable.name = "Sex")
-d <- dPlot(value ~ State, groups = 'Sex', data=dep2013melt, type='line')
-d$legend( x = 60, y = 10, width = 620, height = 20, horizontalAlign = "right")
-```
-
-```{r ,echo=F, results = "asis", comment = NA}
-renderChart({
-d$show('iframe', cdn = TRUE)
-})
-```
-
-
-
-And for 2014
+Looking at the charts of immigrants in years 2013 and 2014 it seems that there are more male immigrants than female. 
 
 ```{r message=F, warning=F, echo=F}
+library(rCharts)
+dep2013melt <- melt(dep2013, 1, variable.name = "Sex")
+d2013 <- dPlot(value ~ State, groups = 'Sex', data=dep2013melt, type='line', title = "Imigrants departed from Germany in 2013")
+d2013$legend( x = 60, y = 10, width = 620, height = 20, horizontalAlign = "right")
+# d2013$addParams(title = "Imigrants departed from Germany in 2013")
+# d2013$set(title = "Imigrants departed from Germany in 2013")
+```
+<h5 style="text-align: center;" markdown="1">**Imigrants departed from Germany in 2013**</h3>
+```{r d2013, results = "asis", comment = NA, echo=F, message=F}
+d2013$show('iframesrc', cdn = TRUE)
+# d2013$save("readme_files/figure-html/d2013-1.html", standalone = TRUE)
+```
+
+
+```{r, results = "asis", comment = NA, message=F, warning=F, echo=F}
+library(rCharts)
 dep2014melt <- melt(dep2014, 1, variable.name = "Sex")
 d2014 <- dPlot(value ~ State, groups = 'Sex', data=dep2014melt, type='line')
 d2014$legend( x = 60, y = 10, width = 620, height = 20, horizontalAlign = "right")
+# d2014$addParams(title = "Imigrants departed from Germany in 2014")
+# d2013$templates$script <- "http://timelyportfolio.github.io/rCharts_nvd3_templates/chartWithTitle.html"
+d2014$set(title = "Imigrants departed from Germany in 2014")
 ```
 
-```{r results = "asis", comment = NA, echo=F}
-d2014$show('iframe', cdn = TRUE)
+<h5 style="text-align: center;" markdown="1">**Imigrants departed from Germany in 2014**</h3>
+```{r Imigrants departed from Germany in 2014, echo=FALSE, message=FALSE, warning=FALSE, comment=NA, results="asis"}
+# d2014$save("readme_files/figure-html/d2014-1.html", standalone = TRUE)
+d2014$show('iframesrc', cdn  = TRUE)
 ```
 
-Then I ran a chi squared test on the contingency tables assuming 50% probability for each sex. The P-value of the twat for both years are almost zero. So the null hypothesis is rejected and the number of male and female migrants are significantly different.
+To be precise. respectively in 2013 and 2014 there where in average `r floor(mean(dep2013$Male) - mean(dep2013$Female))` and `r floor(mean(dep2014$Male) - mean(dep2014$Female))`  more male imigrants that female.  The P-value of the test for both years are almost zero. So the null hypothesis is rejected and the number of male and female migrants are significantly different.
 
 ## Reference
 Statistisches Bundesamt, Wiesbaden 2016

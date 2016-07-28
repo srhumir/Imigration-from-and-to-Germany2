@@ -125,7 +125,7 @@ tss <- lapply(1:nrow(totals), function(i) ts(as.numeric(totals[i,4:ncol(totals)]
 names(tss) <- totals$State
 etss <- lapply(1:length(tss), function(i){
         if (sum(is.na(tss[[i]])) < 35){
-                holt(tss[[i]])
+                rwf(tss[[i]])
         }else{
                 tss[[i]][41]
         }
@@ -145,12 +145,70 @@ forecasts <- data.frame(State = totals$State,
                         Lower95percent = sapply(fcasts, function(x) floor(x$lower[2,1])),
                         Upper95percent = sapply(fcasts, function(x) floor(x$upper[2,1]))
 )
+forecasts$confint2015 <- paste("(",forecasts$Lower95percent,",", forecasts$Upper95percent,
+                 ")", sep="")
+forecasts$confint2016 <- paste("(",forecasts$Lower95percent.1,",", forecasts$Upper95percent.1,
+                               ")", sep="")
+
+
+
 #forest plot
 RelConf <- forecasts$Upper95percent - forecasts$Lower95percent
-p <- ggplot(forecasts, aes(x=State,  y=Year2015, ymin=Lower95percent, ymax=Upper95percent), 
-             )
+p <- ggplot(forecasts, aes(x=State,  y=Year2015, ymin=Lower95percent, ymax=Upper95percent))
 p <-  p + geom_pointrange() + coord_flip() + xlab('Country') + facet_grid(Arrival.Departure~. )
 p 
+
+## forest plot too show forecasts
+forecasts2 <- forecasts[complete.cases(forecasts),]
+arrivalForecast <- forecasts2[forecasts2$Arrival.Departure == "Arrivals",]
+departureForecast <- forecasts2[forecasts2$Arrival.Departure == "Departures",]
+
+####forestplot 2015
+means <- paste(arrivalForecast$Year2015, departureForecast$Year2015, sep = "\n")
+text <- cbind(c("Country",as.character(arrivalForecast$State)), 
+                   c("Forecast",means),
+              c("95% Conf. Interval",paste(arrivalForecast$confint2015,
+                    departureForecast$confint2015, sep="\n"))
+                   )
+forestplot(text,
+           txt_gp = fpTxtGp(label = list(gpar(fontfamily = ""),
+                                         gpar(fontfamily = "",
+                                              col = "#660000", fontsize=7),
+                                         gpar(fontfamily = "",
+                                              col = "#660000", fontsize=7))),
+           legend = c("Arrivals", "Departures"),
+           legend_args = fpLegend(pos = list(x=1, y=0.05), 
+                                  gp=gpar(col="#CCCCCC", fill="#F9F9F9")),
+           mean = cbind(c(NA,arrivalForecast$Year2015), c(NA,departureForecast$Year2015)),
+           lower = cbind(c(NA,arrivalForecast$Lower95percent), c(NA,departureForecast$Lower95percent)),
+           upper = cbind(c(NA,arrivalForecast$Upper95percent), c(NA,departureForecast$Upper95percent)),
+           col = fpColors(box=c("blue", "darkred")),
+           boxsize = .1,
+           title = "Forecasting Arrivals and Departures for 2015"
+           )
+##forestplot 2016
+means <- paste(arrivalForecast$Year2016, departureForecast$Year2016, sep = "\n")
+text <- cbind(c("Country",as.character(arrivalForecast$State)), 
+              c("Forecast",means),
+              c("95% Conf. Interval",paste(arrivalForecast$confint2016,
+                                           departureForecast$confint2016, sep="\n"))
+)
+forestplot(text,
+           txt_gp = fpTxtGp(label = list(gpar(fontfamily = ""),
+                                         gpar(fontfamily = "",
+                                              col = "#660000", fontsize=7),
+                                         gpar(fontfamily = "",
+                                              col = "#660000", fontsize=7))),
+           legend = c("Arrivals", "Departures"),
+           legend_args = fpLegend(pos = list(x=1, y=0.05), 
+                                  gp=gpar(col="#CCCCCC", fill="#F9F9F9")),
+           mean = cbind(c(NA,arrivalForecast$Year2016), c(NA,departureForecast$Year2016)),
+           lower = cbind(c(NA,arrivalForecast$Lower95percent.1), c(NA,departureForecast$Lower95percent.1)),
+           upper = cbind(c(NA,arrivalForecast$Upper95percent.1), c(NA,departureForecast$Upper95percent.1)),
+           col = fpColors(box=c("blue", "darkred")),
+           boxsize = .1,
+           title = "Forecasting Arrivals and Departures for 2016"
+)
 # 
 # a <- holt(tss[[1]])
 # fcast <- forecast(a)
@@ -162,11 +220,14 @@ p
 # etss[[7]]
 # fcasts[[7]]
 for (i in 1:length(fcasts)){
-        p <- autoplot(fcasts[[i]])
-        print(p)
+        plot(fcasts[[i]])
+        # print(p)
         line <- readline()
 }
-
+for (i in 1:length(fcasts)){
+        plot(fcasts[[i]]$fitted, resid(fcasts[[i]]), type = "p")
+        line <- readline()
+}
  
 # Is there a significant difference between the numbers of female and male
 # departures across all countries in the years 2013 and 2014, respectively?
@@ -194,7 +255,8 @@ summary(a)
 
 # dep2013$Female.Ratio <- dep2013$Female/(dep2013$Female+dep2013$Male)
 # dep2013$Male.Ratio <- dep2013$Male/(dep2013$Female+dep2013$Male)
-hist(dep2013$Male.Ratio)
+hist(dep2013$Female)
+hist(dep2013$Male)
 abline(v=mean(dep2013$Male.Ratio))
 chi2013 <- chisq.test(dep2013[,names(dep2013)[2:3]], p = c(.5,.5))
 t2013 <- t.test(dep2013[,2], dep2013[,3], paired = T)
