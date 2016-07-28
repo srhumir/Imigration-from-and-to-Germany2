@@ -1,7 +1,7 @@
 ---
 title: "Analysing migration between Germany and other EU countries"
 author: "Reza Hosseini"
-date: "18 Juli 2016"
+date: "28 July 2016"
 # runtime: shiny
 output: html_document
 ---
@@ -181,6 +181,7 @@ forestplot(text,
            upper = cbind(c(NA,arrivalForecast$Upper95percent), c(NA,departureForecast$Upper95percent)),
            col = fpColors(box=c("blue", "darkred")),
            boxsize = .1,
+           ci.vertices = TRUE,
            title = "Forecasting Arrivals and Departures for 2015"
            )
 ```
@@ -207,6 +208,7 @@ forestplot(text,
            upper = cbind(c(NA,arrivalForecast$Upper95percent.1), c(NA,departureForecast$Upper95percent.1)),
            col = fpColors(box=c("blue", "darkred")),
            boxsize = .1,
+           ci.vertices = TRUE,
            title = "Forecasting Arrivals and Departures for 2016"
 )
 ```

@@ -207,6 +207,7 @@ forestplot(text,
            upper = cbind(c(NA,arrivalForecast$Upper95percent.1), c(NA,departureForecast$Upper95percent.1)),
            col = fpColors(box=c("blue", "darkred")),
            boxsize = .1,
+           hrzl_lines = as.list(c(1:(length(means)+2))),
            title = "Forecasting Arrivals and Departures for 2016"
 )
 # 
