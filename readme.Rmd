@@ -138,22 +138,83 @@ etss <- lapply(1:length(tss), function(i){
 fcasts <- lapply(1:length(etss), function(i) forecast(etss[[i]]) )
 
 forecasts <- data.frame(State = totals$State,  
-                        Arrival.Departure = sub("from foreign countries|to foreign countries", "", totals$`Arrival/Departure`),
+                        Arrival.Departure = sub(" from foreign countries| to foreign countries", "", totals$`Arrival/Departure`),
                         Year2015 = sapply(fcasts, function(x) floor(x$mean[1])),
-                        confint2015 = paste("(", sapply(fcasts, function(x) floor(x$lower[1,1])),",",sapply(fcasts, function(x) floor(x$upper[1,1])), ")", sep=""),
+                        Lower95percent = sapply(fcasts, function(x) floor(x$lower[1,1])),
+                        Upper95percent = sapply(fcasts, function(x) floor(x$upper[1,1])),
                         Year2016 = sapply(fcasts, function(x) floor(x$mean[2])),
-                        Lower95percent = paste("(", sapply(fcasts, function(x) floor(x$lower[1,1])),",",sapply(fcasts, function(x) floor(x$upper[1,1])), ")", sep=""))
+                        Lower95percent = sapply(fcasts, function(x) floor(x$lower[2,1])),
+                        Upper95percent = sapply(fcasts, function(x) floor(x$upper[2,1]))
+)
+forecasts$confint2015 <- paste("(",forecasts$Lower95percent,",", forecasts$Upper95percent,
+                 ")", sep="")
+forecasts$confint2016 <- paste("(",forecasts$Lower95percent.1,",", forecasts$Upper95percent.1,
+                               ")", sep="")
 
-names(forecasts) <- c("State", "Arrival/Departure", "2015", "Conf. Interval", "2016", "Conf. Interval")
+forecasts2 <- forecasts[complete.cases(forecasts),]
+arrivalForecast <- forecasts2[forecasts2$Arrival.Departure == "Arrivals",]
+departureForecast <- forecasts2[forecasts2$Arrival.Departure == "Departures",]
 ```
 
-As no seasonal pattern could be seen in the data but there are local trends in them, I decided to use the linear exponetial smoothing method for forecasting. The results of forecasting including 95 percent confidence intervals can be seen in the following charts and table.
+As no seasonal pattern could be seen in the data , I decided to use the random walk method for forecasting. The results of forecasting including 95 percent confidence intervals can be seen in the following charts.
 
-
-```{r, echo=F, message=F}
-library(knitr)
-kable(forecasts, format.args = list(decimal.mark = ".", big.mark = ","), align = "l",caption = "Forecast of the number of arrivals and departures to and from Germany")
+```{r, fig.width= 14, fig.height=9, message=F, warning=F, echo=F}
+library(forestplot)
+####forestplot 2015
+means <- paste(arrivalForecast$Year2015, departureForecast$Year2015, sep = "\n")
+text <- cbind(c("Country",as.character(arrivalForecast$State)), 
+                   c("Forecast",means),
+              c("95% Conf. Interval",paste(arrivalForecast$confint2015,
+                    departureForecast$confint2015, sep="\n"))
+                   )
+forestplot(text,
+           txt_gp = fpTxtGp(label = list(gpar(fontfamily = ""),
+                                         gpar(fontfamily = "",
+                                              col = "#660000", fontsize=7),
+                                         gpar(fontfamily = "",
+                                              col = "#660000", fontsize=7))),
+           legend = c("Arrivals", "Departures"),
+           legend_args = fpLegend(pos = list(x=.95, y=0.05), 
+                                  gp=gpar(col="#CCCCCC", fill="#F9F9F9")),
+           mean = cbind(c(NA,arrivalForecast$Year2015), c(NA,departureForecast$Year2015)),
+           lower = cbind(c(NA,arrivalForecast$Lower95percent), c(NA,departureForecast$Lower95percent)),
+           upper = cbind(c(NA,arrivalForecast$Upper95percent), c(NA,departureForecast$Upper95percent)),
+           col = fpColors(box=c("blue", "darkred")),
+           boxsize = .1,
+           title = "Forecasting Arrivals and Departures for 2015"
+           )
 ```
+
+```{r, fig.width= 14, fig.height=9, message=F, warning=F, echo=F}
+##forestplot 2016
+means <- paste(arrivalForecast$Year2016, departureForecast$Year2016, sep = "\n")
+text <- cbind(c("Country",as.character(arrivalForecast$State)), 
+              c("Forecast",means),
+              c("95% Conf. Interval",paste(arrivalForecast$confint2016,
+                                           departureForecast$confint2016, sep="\n"))
+)
+forestplot(text,
+           txt_gp = fpTxtGp(label = list(gpar(fontfamily = ""),
+                                         gpar(fontfamily = "",
+                                              col = "#660000", fontsize=7),
+                                         gpar(fontfamily = "",
+                                              col = "#660000", fontsize=7))),
+           legend = c("Arrivals", "Departures"),
+           legend_args = fpLegend(pos = list(x=.95, y=0.05), 
+                                  gp=gpar(col="#CCCCCC", fill="#F9F9F9")),
+           mean = cbind(c(NA,arrivalForecast$Year2016), c(NA,departureForecast$Year2016)),
+           lower = cbind(c(NA,arrivalForecast$Lower95percent.1), c(NA,departureForecast$Lower95percent.1)),
+           upper = cbind(c(NA,arrivalForecast$Upper95percent.1), c(NA,departureForecast$Upper95percent.1)),
+           col = fpColors(box=c("blue", "darkred")),
+           boxsize = .1,
+           title = "Forecasting Arrivals and Departures for 2016"
+)
+```
+
+<!-- ```{r, echo=F, message=F} -->
+<!-- library(knitr) -->
+<!-- kable(forecasts, format.args = list(decimal.mark = ".", big.mark = ","), align = "l",caption = "Forecast of the number of arrivals and departures to and from Germany") -->
+<!-- ``` -->
 
 
 ##Difference between the number of male and female immigrants
